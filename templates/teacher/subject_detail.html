@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Subject Details{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+    <div class="card">
+        <h2>{{ subject.display_label }}</h2>
+        <p class="muted">Teacher: {{ teacher.full_name }}</p>
+        <p class="muted">Time: {{ subject.lecture_time_label }}</p>
+    </div>
+    <div class="card">
+        <h2>Pending Attendance Requests</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in pending_records %}
+                    <tr>
+                        <td>{{ record.student.full_name }}</td>
+                        <td>{{ record.attendance_date|format_date }}</td>
+                        <td class="action-row">
+                            <form method="POST" action="{{ url_for('teacher.update_attendance', attendance_id=record.id) }}">
+                                <input type="hidden" name="status" value="present">
+                                <button class="btn btn-success" type="submit">Accept</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('teacher.update_attendance', attendance_id=record.id) }}">
+                                <input type="hidden" name="status" value="absent">
+                                <button class="btn btn-danger" type="submit">Reject</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3">No pending requests for this subject.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card">
+        <h2>Recent Attendance History</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in history %}
+                    <tr>
+                        <td>{{ record.student.full_name }}</td>
+                        <td>{{ record.attendance_date|format_date }}</td>
+                        <td><span class="status {{ record.status }}">{{ record.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3">No attendance history for this subject.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

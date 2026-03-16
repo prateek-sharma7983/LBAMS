@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+<section class="student-dashboard">
+    <div class="card student-profile-card">
+        <h2>{{ student.full_name }}</h2>
+        <p class="muted">{{ student.student_code }} | Semester {{ student.semester }}</p>
+        <p class="muted">Attendance requests remain pending until approved or rejected by the subject teacher.</p>
+    </div>
+
+    <div class="student-dashboard-grid">
+        <div class="card student-subjects-card">
+            <div class="student-card-header">
+                <h2>Semester Subjects</h2>
+                <p class="muted">Browse your assigned subjects and lecture schedule.</p>
+            </div>
+            <div class="subject-card-list">
+                {% for subject in subjects %}
+                <a class="subject-card" href="{{ url_for('student.subject_attendance_history', subject_id=subject.id) }}">
+                    <p class="subject-heading">{{ subject.display_label }}</p>
+                    <p class="subject-time">Time: {{ subject.lecture_time_label }}</p>
+                </a>
+                {% else %}
+                <p>No subjects available for your semester.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card student-attendance-card">
+            <div class="student-card-header">
+                <h2>Mark Attendance</h2>
+                <p class="muted">Submit attendance requests during the active lecture window.</p>
+            </div>
+            <div class="subject-card-list">
+                {% for subject in subjects %}
+                <div class="subject-card">
+                    <p class="subject-heading">{{ subject.display_label }}</p>
+                    <p class="subject-time">Time: {{ subject.lecture_time_label }}</p>
+                    <button
+                        class="btn btn-primary attendance-trigger"
+                        data-subject-id="{{ subject.id }}"
+                        data-subject-name="{{ subject.name }}"
+                        type="button"
+                    >
+                        Mark Attendance
+                    </button>
+                    {% set status = attendance_status.get(subject.id) %}
+                    <p style="margin-top: 10px; font-size: 0.9em; color: #6c757d;">
+                        Attendance Status: 
+                        {% if status == 'pending' %}
+                            <span style="color: #0d6efd; font-weight: 600;">Pending Approval</span>
+                        {% elif status == 'present' %}
+                            <span style="color: #198754; font-weight: 600;">Accepted</span>
+                        {% elif status == 'absent' %}
+                            <span style="color: #dc3545; font-weight: 600;">Rejected</span>
+                        {% else %}
+                            <span>Not Marked</span>
+                        {% endif %}
+                    </p>
+                </div>
+                {% else %}
+                <p>No subjects available for your semester.</p>
+                {% endfor %}
+            </div>
+            <p id="attendance-message" class="muted"></p>
+        </div>
+
+        <div class="card student-summary-card">
+            <div class="student-card-header">
+                <h2>Attendance Summary</h2>
+                <p class="muted">Track total classes and current attendance percentage.</p>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Total Classes</th>
+                            <th>Present</th>
+                            <th>Attendance %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in summary %}
+                        <tr>
+                            <td>{{ row.subject.display_label }}<br><span class="muted">Time: {{ row.subject.lecture_time_label }}</span></td>
+                            <td>{{ row.total_classes }}</td>
+                            <td>{{ row.present }}</td>
+                            <td>{{ row.percentage }}%</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4">No attendance summary yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card student-history-card">
+            <div class="student-card-header">
+                <h2>Attendance History</h2>
+                <p class="muted">Review approved, rejected, and pending attendance records.</p>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in history %}
+                        <tr>
+                            <td>{{ record.attendance_date|format_date }}</td>
+                            <td>{{ record.subject.display_label }}<br><span class="muted">Time: {{ record.subject.lecture_time_label }}</span></td>
+                            <td>
+                                {% if record.status == 'present' %}
+                                <span class="status present">Accepted</span>
+                                {% elif record.status == 'absent' %}
+                                <span class="status absent">Rejected</span>
+                                {% else %}
+                                <span class="status pending">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3">No attendance history.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/student.js') }}"></script>
+{% endblock %}

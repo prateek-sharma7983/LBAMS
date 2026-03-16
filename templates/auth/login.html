@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+    <form class="card form-card" method="POST">
+        <h2>Login</h2>
+        {% if selected_teacher_email %}
+        <input type="hidden" name="selected_teacher_email" value="{{ selected_teacher_email }}">
+        {% endif %}
+        <label>Email</label>
+        <input
+            type="email"
+            name="email"
+            value="{{ login_email or '' }}"
+            {% if selected_teacher_email %}readonly{% endif %}
+            required
+        >
+        <label>Password</label>
+        <input type="password" name="password" required>
+        <button class="btn btn-primary" type="submit">Login</button>
+        <a class="btn btn-secondary" href="{{ url_for('main.home') }}">Home</a>
+        <p class="muted">Students can self-register.</p>
+        <a href="{{ url_for('auth.register_student') }}">Create student account</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Student Registration{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+    <form class="card form-card" method="POST">
+        <h2>Student Registration</h2>
+        <label>Full Name</label>
+        <input type="text" name="full_name" required>
+        <label>Email</label>
+        <input type="email" name="email" required>
+        <label>Semester</label>
+        <input type="number" name="semester" min="1" max="8" required>
+        <label>Password</label>
+        <input type="password" name="password" required>
+        <button class="btn btn-primary" type="submit">Register</button>
+        <a class="btn btn-secondary" href="{{ url_for('main.home') }}">Home</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Teacher Dashboard{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+    <div class="card">
+        <h2>{{ teacher.full_name }}</h2>
+        <p class="muted">Assigned Subjects</p>
+        <div class="subject-card-grid">
+            {% for subject in subjects %}
+            <a class="subject-card" href="{{ url_for('teacher.subject_detail', subject_id=subject.id) }}">
+                <p class="subject-heading">{{ subject.display_label }}</p>
+                <p class="muted">Teacher: {{ teacher.full_name }}</p>
+                <p class="subject-time">Time: {{ subject.lecture_time_label }}</p>
+            </a>
+            {% else %}
+            <p>No subjects assigned.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Pending Attendance Requests</h2>
+        <div class="flash-stack">
+            {% for message in notifications %}
+            <div class="flash flash-info">{{ message }}</div>
+            {% endfor %}
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Subject</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in pending_requests %}
+                    <tr>
+                        <td>{{ record.student.full_name }}</td>
+                        <td>{{ record.subject.display_label }}<br><span class="muted">Time: {{ record.subject.lecture_time_label }}</span></td>
+                        <td>{{ record.attendance_date|format_date }}</td>
+                        <td class="action-row">
+                            <form method="POST" action="{{ url_for('teacher.update_attendance', attendance_id=record.id) }}">
+                                <input type="hidden" name="status" value="present">
+                                <button class="btn btn-success" type="submit">Accept</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('teacher.update_attendance', attendance_id=record.id) }}">
+                                <input type="hidden" name="status" value="absent">
+                                <button class="btn btn-danger" type="submit">Reject</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4">No pending requests.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Attendance History</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Subject</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in history %}
+                    <tr>
+                        <td>{{ record.student.full_name }}</td>
+                        <td>{{ record.subject.display_label }}<br><span class="muted">Time: {{ record.subject.lecture_time_label }}</span></td>
+                        <td>{{ record.attendance_date|format_date }}</td>
+                        <td><span class="status {{ record.status }}">{{ record.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4">No attendance history.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

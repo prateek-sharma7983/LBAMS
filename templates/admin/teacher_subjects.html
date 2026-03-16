@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Teacher Subjects{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+    <div class="card">
+        <div class="section-header">
+            <div>
+                <h2>Teacher: {{ teacher.full_name }}</h2>
+                {% if teacher.user %}
+                <p class="muted">{{ teacher.user.username }}</p>
+                {% endif %}
+            </div>
+            <a class="btn btn-secondary" href="{{ url_for('admin.manage_teacher_subjects') }}">Back to Teacher List</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject Code</th>
+                        <th>Subject Name</th>
+                        <th>Lecture Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject in assigned_subjects %}
+                    <tr>
+                        <td>{{ subject.code }}</td>
+                        <td>{{ subject.name }} (Semester {{ subject.semester }})</td>
+                        <td>{{ subject.lecture_time_label }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin.remove_teacher_subject', teacher_id=teacher.id, subject_id=subject.id) }}">
+                                <button class="btn btn-danger" type="submit">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4">No subjects assigned to this teacher.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+    <div class="stats-row">
+        <div class="card stat-card"><h3>{{ stats.students }}</h3><p>Total Students</p></div>
+        <div class="card stat-card"><h3>{{ stats.teachers }}</h3><p>Total Teachers</p></div>
+        <div class="card stat-card"><h3>{{ stats.subjects }}</h3><p>Total Subjects</p></div>
+    </div>
+
+    <div class="card">
+        <div class="section-header">
+            <div>
+                <h2>Teachers</h2>
+                <p class="muted">Select a teacher to view assigned subjects.</p>
+            </div>
+            <a class="btn btn-secondary" href="{{ url_for('admin.manage_teacher_subjects') }}">Manage Teacher Subjects</a>
+        </div>
+        <div class="subject-list">
+            {% for teacher in teachers %}
+            <a class="subject-pill" href="{{ url_for('admin.teacher_subjects', teacher_id=teacher.id) }}">
+                {{ teacher.full_name }}
+            </a>
+            {% else %}
+            <p>No teachers found.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Create Teacher</h2>
+        <form class="grid-form" method="POST" action="{{ url_for('admin.create_teacher') }}">
+            <input type="text" name="full_name" placeholder="Full Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="text" name="employee_code" placeholder="Employee Code" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <select name="subject_ids" multiple size="8">
+                {% for subject in subjects %}
+                <option value="{{ subject.id }}">{{ subject.display_label }} ({{ subject.lecture_time_label }})</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-primary" type="submit">Create Teacher</button>
+        </form>
+        <p class="muted">Use Ctrl + Click to select multiple subjects.</p>
+    </div>
+
+    <div class="card">
+        <h2>Add Subject</h2>
+        <form class="grid-form" method="POST" action="{{ url_for('admin.create_subject') }}">
+            <input type="text" name="name" placeholder="Subject Name" required>
+            <input type="text" name="code" placeholder="Subject Code" required>
+            <select name="semester" required>
+                <option value="" disabled selected>Select Semester</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+            </select>
+            <select name="subject_type" required>
+                <option value="theory">Theory</option>
+                <option value="lab">Lab</option>
+                <option value="project">Project</option>
+            </select>
+            <button class="btn btn-primary" type="submit">Create Subject</button>
+        </form>
+        <p class="muted">Creates a new subject. Lecture times and teacher assignments can be configured after creation.</p>
+    </div>
+
+    <div class="card" style="border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); font-family: 'Inter', 'Segoe UI', Arial, sans-serif;">
+        <h2 style="font-weight: 600; font-size: 18px; color: #2c3e50; margin-bottom: 15px;">Manage Subjects</h2>
+        
+        <div class="mb-3">
+            <label for="subjectSelect" style="font-size: 14px; font-weight: 500; color: #555;">Select Subject</label>
+            <select class="form-select" id="subjectSelect" onchange="updateSubjectDetails()" style="font-size: 14px; color: #2c3e50;">
+                <option value="" disabled selected>-- Select Subject --</option>
+                {% for subject in subjects %}
+                <option value="{{ subject.id }}" 
+                        data-name="{{ subject.name }}"
+                        data-code="{{ subject.code }}"
+                        data-semester="{{ subject.semester }}"
+                        data-time="{{ subject.lecture_time_label }}">
+                    Semester {{ subject.semester }} - {{ subject.name }} ({{ subject.lecture_time_label }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="subjectDetails" style="display: none; padding: 15px; border-radius: 8px; background-color: #f8f9fa; border: 1px solid #e9ecef;">
+            <h5 id="detailName" style="font-size: 16px; font-weight: 600; color: #2c3e50; margin-bottom: 8px;"></h5>
+            <p style="font-size: 14px; color: #2c3e50; margin-bottom: 4px;"><strong>Semester:</strong> <span id="detailSemester"></span></p>
+            <p style="font-size: 14px; color: #2c3e50; margin-bottom: 0;"><strong>Lecture Time:</strong> <span id="detailTime"></span></p>
+        </div>
+
+        <script>
+            function updateSubjectDetails() {
+                const select = document.getElementById('subjectSelect');
+                const selectedOption = select.options[select.selectedIndex];
+                const detailsDiv = document.getElementById('subjectDetails');
+
+                if (selectedOption.value) {
+                    document.getElementById('detailName').textContent = selectedOption.getAttribute('data-name') + ' (' + selectedOption.getAttribute('data-code') + ')';
+                    document.getElementById('detailSemester').textContent = selectedOption.getAttribute('data-semester');
+                    document.getElementById('detailTime').textContent = selectedOption.getAttribute('data-time');
+                    detailsDiv.style.display = 'block';
+                } else {
+                    detailsDiv.style.display = 'none';
+                }
+            }
+        </script>
+    </div>
+
+    <div class="card">
+        <h2>Lecture Slots</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Slot</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slot in lecture_slots %}
+                    <tr>
+                        <td>{{ slot.label }}</td>
+                        <td>{{ slot.start_time|format_time }} - {{ slot.end_time|format_time }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="2">No lecture slots configured.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Assign Subject</h2>
+        <form class="grid-form" method="POST" action="{{ url_for('admin.assign_subject') }}">
+            <select name="subject_id" required>
+                {% for subject in subjects %}
+                <option value="{{ subject.id }}">{{ subject.display_label }} ({{ subject.lecture_time_label }})</option>
+                {% endfor %}
+            </select>
+            <select name="teacher_id" required>
+                {% for teacher in teachers %}
+                <option value="{{ teacher.id }}">{{ teacher.full_name }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-primary" type="submit">Assign</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Change Lecture Time</h2>
+        <p class="muted">Manually override the lecture start and end time for any subject.</p>
+        <a href="{{ url_for('admin.change_lecture_time') }}" class="btn btn-primary" style="margin-top: 1rem; width: fit-content;">
+            Change Lecture Time
+        </a>
+    </div>
+
+    <div class="card">
+        <h2>Students</h2>
+        <form class="grid-form" method="GET" action="{{ url_for('admin.dashboard') }}">
+            <select name="semester">
+                <option value="">All Semesters</option>
+                {% for semester in range(1, 7) %}
+                <option value="{{ semester }}" {% if selected_semester == semester %}selected{% endif %}>
+                    Semester {{ semester }}
+                </option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-primary" type="submit">Filter</button>
+        </form>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Semester</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if students %}
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.student_code }}</td>
+                        <td>{{ student.full_name }}</td>
+                        <td>{{ student.email }}</td>
+                        <td>{{ student.semester }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="4">No students found for the selected semester.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" style="border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); padding: 20px; font-family: 'Inter', 'Segoe UI', Arial, sans-serif;">
+        <div onclick="toggleActivityList()" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="font-weight: 600; font-size: 18px; color: #2c3e50; margin: 0;">Recent Attendance Activity</h2>
+            <span id="activityToggleArrow" style="font-size: 18px;">▼</span>
+        </div>
+
+        <div id="activityList" class="mt-3" style="display: none;">
+            {% for attendance, student, subject in recent_reports %}
+            <div class="p-3 border rounded mb-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1" style="font-size: 16px; font-weight: 600; color: #2c3e50;">{{ student.full_name }}</h6>
+                        <p class="mb-1 text-muted small">{{ subject.display_label }}</p>
+                    </div>
+                    <span class="status {{ attendance.status }}">{{ attendance.status }}</span>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">{{ attendance.attendance_date|format_date }}</small>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center p-3">
+                <p class="text-muted">No recent attendance activity.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <script>
+            function toggleActivityList() {
+                const list = document.getElementById('activityList');
+                const arrow = document.getElementById('activityToggleArrow');
+                if (list.style.display === 'none' || list.style.display === '') {
+                    list.style.display = 'block';
+                    arrow.textContent = '▲';
+                } else {
+                    list.style.display = 'none';
+                    arrow.textContent = '▼';
+                }
+            }
+        </script>
+    </div>
+</section>
+{% endblock %}

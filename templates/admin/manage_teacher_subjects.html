@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Manage Teacher Subjects{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+    <div class="card">
+        <div class="section-header">
+            <div>
+                <h2>Manage Teacher Subjects</h2>
+                <p class="muted">Choose a teacher to view and remove assigned subjects. Subjects themselves are not deleted.</p>
+            </div>
+            <a class="btn btn-secondary" href="{{ url_for('admin.dashboard') }}">Back to Dashboard</a>
+        </div>
+        <div class="subject-list">
+            {% for teacher in teachers %}
+            <a class="subject-pill" href="{{ url_for('admin.teacher_subjects', teacher_id=teacher.id) }}">
+                {{ teacher.full_name }}
+            </a>
+            {% else %}
+            <p>No teachers found.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

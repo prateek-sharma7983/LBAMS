@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Attendance System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        {% if current_user.is_authenticated %}
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h2>LBAMS</h2>
+                <p class="muted">{{ current_user.role|title }} Portal</p>
+            </div>
+            <nav class="nav-links">
+                <a href="{{ url_for('main.home') }}"><span class="nav-icon">&#8962;</span><span>Home</span></a>
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin.dashboard') }}"><span class="nav-icon">&#9638;</span><span>Dashboard</span></a>
+                <a href="{{ url_for('admin.manage_teacher_subjects') }}"><span class="nav-icon">&#8942;</span><span>Manage Teacher Subjects</span></a>
+                {% elif current_user.role == 'teacher' %}
+                <a href="{{ url_for('teacher.dashboard') }}"><span class="nav-icon">&#9638;</span><span>Dashboard</span></a>
+                {% elif current_user.role == 'student' %}
+                <a href="{{ url_for('student.dashboard') }}"><span class="nav-icon">&#9638;</span><span>Dashboard</span></a>
+                {% endif %}
+                <a href="{{ url_for('auth.logout') }}"><span class="nav-icon">&#8617;</span><span>Logout</span></a>
+            </nav>
+        </aside>
+        {% endif %}
+        <main class="content {% if not current_user.is_authenticated %}content-full{% endif %}">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-stack">
+                        {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Attendance History{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+    <div class="card">
+        <h2>Attendance History - {{ subject.display_label }}</h2>
+        <p class="muted">Time: {{ subject.lecture_time_label }}</p>
+        <a class="btn btn-secondary" href="{{ url_for('student.dashboard') }}">Back to Dashboard</a>
+    </div>
+
+    <div class="card">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ record.attendance_date|format_date }}</td>
+                        <td>{{ subject.display_label }}</td>
+                        <td>
+                            {% if record.status == 'present' %}
+                            <span class="status present">Accepted</span>
+                            {% elif record.status == 'absent' %}
+                            <span class="status absent">Rejected</span>
+                            {% else %}
+                            <span class="status pending">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3">No attendance history for this subject.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}
