@@ -1,5 +1,5 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
-from flask_login import current_user, login_required, logout_user
+from flask_login import current_user, login_required
 from sqlalchemy import case
 
 from models import (
@@ -24,9 +24,7 @@ def teacher_required():
 @login_required
 def dashboard():
     if not teacher_required():
-        logout_user()
-        flash("You must be logged in as a teacher to view this page.", "danger")
-        return redirect(url_for("auth.login", for_role="teacher"))
+        return redirect(url_for("auth.login"))
 
     reconcile_lecture_attendance()
     teacher = Teacher.query.filter_by(user_id=current_user.id).first_or_404()
@@ -73,9 +71,7 @@ def dashboard():
 @login_required
 def subject_detail(subject_id):
     if not teacher_required():
-        logout_user()
-        flash("You must be logged in as a teacher to view this page.", "danger")
-        return redirect(url_for("auth.login", for_role="teacher"))
+        return redirect(url_for("auth.login"))
 
     reconcile_lecture_attendance()
     teacher = Teacher.query.filter_by(user_id=current_user.id).first_or_404()
@@ -108,9 +104,7 @@ def subject_detail(subject_id):
 @login_required
 def update_attendance(attendance_id):
     if not teacher_required():
-        logout_user()
-        flash("You must be logged in as a teacher to view this page.", "danger")
-        return redirect(url_for("auth.login", for_role="teacher"))
+        return redirect(url_for("auth.login"))
 
     reconcile_lecture_attendance()
     teacher = Teacher.query.filter_by(user_id=current_user.id).first_or_404()

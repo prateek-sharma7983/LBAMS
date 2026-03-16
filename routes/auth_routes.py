@@ -35,31 +35,8 @@ def login():
             flash("Invalid teacher credentials for the selected account.", "danger")
             login_email = selected_teacher_email
         elif user:
-            # Role-based login validation
-            expected_role = request.args.get("for_role")
-
-            # Teacher login context from home page link
-            if not expected_role and normalize_email(request.args.get("email", "")):
-                expected_role = "teacher"
-
-            # Default to student for general login page
-            if not expected_role:
-                expected_role = "student"
-
-            if user.role != expected_role:
-                flash(
-                    f"Incorrect account type. This login is for {expected_role} accounts only.",
-                    "danger",
-                )
-                preserved_args = {k: v for k, v in request.args.items() if k in ['for_role', 'email']}
-                return redirect(url_for("auth.login", **preserved_args))
-
             login_user(user)
             flash("Login successful.", "success")
-
-            next_page = request.args.get("next")
-            if next_page:
-                return redirect(next_page)
             return redirect_by_role(user.role)
         else:
             print(f"DEBUG: Login failed for email={email}")

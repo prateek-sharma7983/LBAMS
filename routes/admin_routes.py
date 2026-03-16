@@ -23,7 +23,7 @@ def require_admin_login():
         logout_user()
 
     flash("Admin email and password are required to open the admin dashboard.", "danger")
-    return redirect(url_for("auth.login", for_role="admin"))
+    return redirect(url_for("auth.login"))
 
 
 @admin_bp.route("/dashboard")
