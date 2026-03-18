@@ -1,5 +1,6 @@
 from datetime import date, datetime, time
 import math
+import pytz
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
@@ -8,9 +9,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
 
-COLLEGE_LATITUDE = 28.354418
-COLLEGE_LONGITUDE = 79.427859
-ALLOWED_RADIUS_METERS = 40
+COLLEGE_LATITUDE = 28.355040
+COLLEGE_LONGITUDE = 79.418186
+ALLOWED_RADIUS_METERS = 600
+
+IST = pytz.timezone("Asia/Kolkata")
 
 
 teacher_subjects = db.Table(
@@ -225,6 +228,7 @@ def update_attendance_summary(student_id, subject_id):
 
 def ensure_subject_lecture(subject, lecture_date=None):
     lecture_date = lecture_date or date.today()
+    lecture_date = lecture_date or datetime.now(IST).date()
     lecture = Lecture.query.filter_by(subject_id=subject.id, lecture_date=lecture_date).first()
     start_time = subject.start_time or time(hour=0, minute=0)
     end_time = subject.end_time or time(hour=0, minute=0)
@@ -283,14 +287,19 @@ def backfill_lecture_records_from_attendance():
 
 def lecture_has_ended(lecture, reference_dt=None):
     reference_dt = reference_dt or datetime.now()
+    reference_dt = reference_dt or datetime.now(IST)
     lecture_day = lecture.lecture_date or reference_dt.date()
     lecture_end_time = lecture.end_time or time(hour=0, minute=0)
     lecture_end = datetime.combine(lecture_day, lecture_end_time)
+    # Handle timezone awareness for correct comparison
+    if reference_dt.tzinfo is not None and lecture_end.tzinfo is None:
+        lecture_end = reference_dt.tzinfo.localize(lecture_end)
     return reference_dt >= lecture_end
 
 
 def auto_mark_absent_for_completed_lectures(reference_dt=None):
     reference_dt = reference_dt or datetime.now()
+    reference_dt = reference_dt or datetime.now(IST)
     lectures = (
         Lecture.query.filter(Lecture.lecture_date.isnot(None))
         .order_by(Lecture.lecture_date.asc(), Lecture.subject_id.asc())
@@ -338,6 +347,7 @@ def auto_mark_absent_for_completed_lectures(reference_dt=None):
 
 def reconcile_lecture_attendance(reference_dt=None):
     reference_dt = reference_dt or datetime.now()
+    reference_dt = reference_dt or datetime.now(IST)
     current_date = reference_dt.date()
     current_time = reference_dt.time()
 

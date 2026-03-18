@@ -1,4 +1,5 @@
 from datetime import datetime
+import pytz
 
 from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
@@ -19,6 +20,7 @@ from models import (
 )
 
 student_bp = Blueprint("student", __name__)
+IST = pytz.timezone("Asia/Kolkata")
 
 
 def student_required():
@@ -46,7 +48,7 @@ def dashboard():
     # Fetch today's attendance status for all subjects
     todays_attendance = Attendance.query.filter_by(
         student_id=student.id,
-        attendance_date=datetime.now().date()
+        attendance_date=datetime.now(IST).date()
     ).all()
     attendance_status = {att.subject_id: att.status for att in todays_attendance}
 
@@ -123,7 +125,7 @@ def mark_attendance():
 
     # Lecture Time Validation
     if subject.start_time and subject.end_time:
-        current_time = datetime.now().time()
+        current_time = datetime.now(IST).time()
         if current_time < subject.start_time:
             return jsonify({"ok": False, "message": "Lecture has not started yet."}), 400
         if current_time > subject.end_time:
@@ -132,7 +134,7 @@ def mark_attendance():
     existing = Attendance.query.filter_by(
         student_id=student.id,
         subject_id=subject.id,
-        attendance_date=datetime.now().date(),
+        attendance_date=datetime.now(IST).date(),
     ).first()
     if existing:
         return jsonify({"ok": False, "message": "Attendance already marked for this subject today."}), 400
@@ -147,7 +149,7 @@ def mark_attendance():
         student_id=student.id,
         subject_id=subject.id,
         lecture_id=lecture.id,
-        attendance_date=datetime.now().date(),
+        attendance_date=datetime.now(IST).date(),
         status="pending",
         latitude=latitude,
         longitude=longitude,
