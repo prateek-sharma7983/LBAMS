@@ -30,13 +30,13 @@ A Flask-based web application that enables institutions to manage student attend
 ## 📸 Screenshots
 
 ### 🏠 Home Page
-![Home](screenshot/homepage.png)
+![Home](screenshot/homepage.png.pngpng)
 
 ### 🛠 Admin Dashboard
-![Admin](screenshot/adminpanel.png)
+![Admin](screenshot/adminpanel.png.png)
 
 ### 📝 Student Registration
-![Registration](screenshot/registration.png)
+![Registration](screenshot/registration.png.png)
 
 ## ⚙️ Installation & Setup
 
