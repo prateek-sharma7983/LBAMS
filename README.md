@@ -1,38 +1,98 @@
-# Location Based Attendance Management System
+# 📍 Location Based Attendance System (LBAMS)
 
-## Stack
-- Python Flask backend
-- MySQL database
-- HTML, CSS, JavaScript frontend
+A Flask-based web application that enables institutions to manage student attendance using location verification, admin approval, and roll number tracking.
 
-## Setup
-1. Create a virtual environment and install dependencies with `pip install -r requirements.txt`.
-2. Create the MySQL database using `database/schema.sql`.
-3. Update the MySQL connection string in `app.py`.
-4. Run the application with `python app.py`.
+---
 
-## Default Admin
-Create an admin account once from a Flask shell:
+## 🚀 Features
 
-```python
-from app import app
-from models import Admin, User, db
-from werkzeug.security import generate_password_hash
+* 🔐 Student, Teacher & Admin Login System
+* 📍 Location-Based Attendance Marking
+* ✅ Admin Approval for Student Registration
+* ❌ Reject / Approve System with Safety Checks
+* 👨‍🏫 Teacher Management (Add / Remove / Restore)
+* 🆔 Roll Number System for Students
+* 📊 Attendance Tracking (Subject-wise + History)
+* 🔎 Admin Search by Roll Number
+* 🔒 Secure Actions (Admin Password Confirmation)
 
-with app.app_context():
-    user = User(username="admin@example.com", role="admin")
-    user.password_hash = generate_password_hash("admin123")
-    db.session.add(user)
-    db.session.flush()
-    db.session.add(Admin(user_id=user.id, full_name="System Admin"))
-    db.session.commit()
+---
+
+## 🛠️ Tech Stack
+
+* **Backend:** Flask (Python)
+* **Database:** SQLite (SQLAlchemy ORM)
+* **Frontend:** HTML, CSS, Bootstrap
+* **Authentication:** Flask-Login
+
+---
+
+## 📸 Screenshots
+
+### 🏠 Home Page
+
+![Home](screenshot/homepage.png)
+
+### 🛠 Admin Dashboard
+
+![Admin](screenshot/adminpanel.png)
+
+### 📝 Student Registration
+
+![Registration](screenshot/registration.png)
+
+---
+
+## ⚙️ Installation & Setup
+
+1. Clone the repository
+
+```bash
+git clone https://github.com/prateek-sharma7983/LBAMS.git
 ```
 
-## Features
-- Student self-registration with generated IDs like `STU1001`
-- Role-based login for admin, teacher, and student
-- Admin teacher and subject management with attendance reports
-- Teacher approval workflow for pending attendance
-- Student geolocation-based attendance marking
-- Haversine distance check within 10 meter campus radius
-- Lecture-time window enforcement and duplicate attendance prevention
+2. Navigate to project folder
+
+```bash
+cd LBAMS
+```
+
+3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Run the application
+
+```bash
+python app.py
+```
+
+5. Open in browser
+
+```bash
+http://127.0.0.1:5000
+```
+
+---
+
+## 📌 Usage
+
+* Students register and wait for admin approval
+* Admin approves or rejects requests
+* Students mark attendance based on location
+* Admin can search attendance using roll number
+* Teachers can be managed by admin panel
+
+---
+
+## 👨‍💻 Author
+
+**Prateek Sharma**
+
+---
+
+## ⭐ Support
+
+If you like this project, please ⭐ star the repository!
