@@ -11,10 +11,109 @@
     <div class="card">
         <div class="section-header">
             <div>
-                <h2>Teachers</h2>
-                <p class="muted">Select a teacher to view assigned subjects.</p>
+                <h2>Active Teachers</h2>
+                <p class="muted">Manage active faculty and move teachers to the removed list safely.</p>
             </div>
             <a class="btn btn-secondary" href="{{ url_for('admin.manage_teacher_subjects') }}">Manage Teacher Subjects</a>
+        </div>
+        <div class="d-flex justify-content-center mt-3">
+            <button
+                class="btn btn-danger"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#removeTeacherCollapse"
+                aria-expanded="false"
+                aria-controls="removeTeacherCollapse"
+            >
+                Remove Teacher
+            </button>
+        </div>
+        <div class="collapse mt-4" id="removeTeacherCollapse">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for teacher in teachers %}
+                        <tr>
+                            <td>
+                                <a class="table-link" href="{{ url_for('admin.teacher_subjects', teacher_id=teacher.id) }}">
+                                    {{ teacher.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ teacher.user.username }}</td>
+                            <td class="text-center">
+                                <button
+                                    class="btn btn-danger btn-sm"
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#removeTeacherModal"
+                                    data-remove-url="{{ url_for('admin.remove_teacher', teacher_id=teacher.id) }}"
+                                    data-teacher-name="{{ teacher.full_name }}"
+                                >
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">No active teachers found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-header">
+            <div>
+                <h2>Removed Teachers</h2>
+                <p class="muted">Restore teachers here whenever needed.</p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for teacher in removed_teachers %}
+                    <tr>
+                        <td>{{ teacher.full_name }}</td>
+                        <td>{{ teacher.user.username }}</td>
+                        <td class="text-center">
+                            <form method="POST" action="{{ url_for('admin.restore_teacher', teacher_id=teacher.id) }}">
+                                <button class="btn btn-success btn-sm" type="submit">Restore</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-4">No removed teachers found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-header">
+            <div>
+                <h2>Teacher Directory</h2>
+                <p class="muted">Select an active teacher to view assigned subjects.</p>
+            </div>
         </div>
         <div class="subject-list">
             {% for teacher in teachers %}
@@ -164,6 +263,9 @@
 
     <div class="card">
         <h2>Students</h2>
+        <a class="btn btn-secondary" href="{{ url_for('admin.pending_students') }}" style="margin-bottom: 1rem; width: fit-content;">
+            View Pending Approvals
+        </a>
         <form class="grid-form" method="GET" action="{{ url_for('admin.dashboard') }}">
             <select name="semester">
                 <option value="">All Semesters</option>
@@ -203,6 +305,19 @@
                 </tbody>
             </table>
         </div>
+    </div>
+
+    <div class="card">
+        <h2>Search Attendance By Roll Number</h2>
+        <form class="grid-form" method="GET" action="{{ url_for('admin.student_attendance') }}">
+            <input
+                type="text"
+                name="roll_number"
+                placeholder="Enter Roll Number"
+                required
+            >
+            <button class="btn btn-primary" type="submit">Search</button>
+        </form>
     </div>
 
     <div class="card" style="border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); padding: 20px; font-family: 'Inter', 'Segoe UI', Arial, sans-serif;">
@@ -247,4 +362,53 @@
         </script>
     </div>
 </section>
+
+<div class="modal fade" id="removeTeacherModal" tabindex="-1" aria-labelledby="removeTeacherModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" id="removeTeacherForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="removeTeacherModalLabel">Confirm Teacher Removal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        Enter your admin password to remove
+                        <strong id="removeTeacherName">this teacher</strong>.
+                    </p>
+                    <label for="adminPassword" class="form-label">Admin Password</label>
+                    <input
+                        type="password"
+                        class="form-control"
+                        id="adminPassword"
+                        name="admin_password"
+                        required
+                    >
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Confirm Remove</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const removeTeacherModal = document.getElementById('removeTeacherModal');
+    if (removeTeacherModal) {
+        removeTeacherModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const form = document.getElementById('removeTeacherForm');
+            const teacherName = document.getElementById('removeTeacherName');
+            const passwordInput = document.getElementById('adminPassword');
+
+            form.action = button.getAttribute('data-remove-url');
+            teacherName.textContent = button.getAttribute('data-teacher-name');
+            passwordInput.value = '';
+        });
+    }
+</script>
 {% endblock %}

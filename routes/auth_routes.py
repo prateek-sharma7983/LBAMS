@@ -35,7 +35,29 @@ def login():
             flash("Invalid teacher credentials for the selected account.", "danger")
             login_email = selected_teacher_email
         elif user:
+            if user.role == "student" and user.student:
+                if user.student.is_rejected:
+                    flash("Your account has been rejected by admin", "danger")
+                    login_email = email
+                    return render_template(
+                        "auth/login.html",
+                        login_email=login_email,
+                        selected_teacher_email=selected_teacher_email,
+                    )
+                if not user.student.is_approved:
+                    flash("Your account is waiting for admin approval", "warning")
+                    login_email = email
+                    return render_template(
+                        "auth/login.html",
+                        login_email=login_email,
+                        selected_teacher_email=selected_teacher_email,
+                    )
             login_user(user)
+            if user.role == "student" and user.student:
+                roll_number = (user.student.roll_number or "").strip()
+                if not roll_number:
+                    flash("Please add your roll number to continue.", "info")
+                    return redirect(url_for("student.update_roll_number"))
             flash("Login successful.", "success")
             return redirect_by_role(user.role)
         else:
@@ -57,16 +79,20 @@ def register_student():
 
     if request.method == "POST":
         full_name = request.form.get("full_name", "").strip()
+        roll_number = request.form.get("roll_number", "").strip().upper()
         email = normalize_email(request.form.get("email", ""))
         semester = request.form.get("semester", type=int)
         password = request.form.get("password", "")
 
-        if not full_name or not email or not password or semester is None:
+        if not full_name or not roll_number or not email or not password or semester is None:
             flash("All fields are required.", "danger")
             return redirect(url_for("auth.register_student"))
 
         if User.query.filter_by(username=email).first() or Student.query.filter_by(email=email).first():
             flash("Email already exists.", "danger")
+            return redirect(url_for("auth.register_student"))
+        if Student.query.filter_by(roll_number=roll_number).first():
+            flash("Roll number already exists.", "danger")
             return redirect(url_for("auth.register_student"))
 
         try:
@@ -78,6 +104,7 @@ def register_student():
             student = Student(
                 user_id=user.id,
                 student_code=generate_student_code(),
+                roll_number=roll_number,
                 full_name=full_name,
                 email=email,
                 semester=semester,

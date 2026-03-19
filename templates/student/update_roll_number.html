@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Update Roll Number{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+    <form class="card form-card" method="POST">
+        <h2>Enter Roll Number</h2>
+        <p class="muted">Your account needs a roll number before you can continue.</p>
+        <label>Roll Number</label>
+        <input type="text" name="roll_number" value="{{ student.roll_number or '' }}" required>
+        {% if error_message %}
+        <p class="flash flash-danger">{{ error_message }}</p>
+        {% endif %}
+        <button class="btn btn-primary" type="submit">Save Roll Number</button>
+    </form>
+</div>
+{% endblock %}

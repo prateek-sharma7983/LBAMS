@@ -28,33 +28,18 @@
                     <h2>Teachers</h2>
                     <p class="muted">Faculty accounts available in the system.</p>
                 </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Employee Code</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if teachers %}
-                            {% for teacher in teachers %}
-                            <tr>
-                                <td>
-                                    <a href="{{ url_for('auth.login', email=teacher.user.username) }}">
-                                        {{ teacher.full_name }}
-                                    </a>
-                                </td>
-                                <td>{{ teacher.employee_code }}</td>
-                            </tr>
-                            {% endfor %}
-                            {% else %}
-                            <tr>
-                                <td colspan="2">No teachers have been created yet.</td>
-                            </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
+                <div class="teachers-grid">
+                    {% if teachers %}
+                    {% for teacher in teachers %}
+                    <a class="teacher-name-card" href="{{ url_for('auth.login', email=teacher.user.username) }}">
+                        <span class="teacher-name-text">{{ teacher.full_name }}</span>
+                    </a>
+                    {% endfor %}
+                    {% else %}
+                    <div class="teachers-empty-state">
+                        No teachers have been created yet.
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </section>

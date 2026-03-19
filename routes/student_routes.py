@@ -27,14 +27,66 @@ def student_required():
     return current_user.is_authenticated and current_user.role == "student"
 
 
+def get_current_student():
+    return Student.query.filter_by(user_id=current_user.id).first_or_404()
+
+
+def require_roll_number(student):
+    if not student.roll_number or not student.roll_number.strip():
+        return redirect(url_for("student.update_roll_number"))
+    return None
+
+
+@student_bp.route("/update-roll-number", methods=["GET", "POST"])
+@login_required
+def update_roll_number():
+    if not student_required():
+        return redirect(url_for("auth.login"))
+
+    student = get_current_student()
+    if request.method == "POST":
+        roll_number = request.form.get("roll_number", "").strip().upper()
+
+        if not roll_number:
+            return render_template(
+                "student/update_roll_number.html",
+                student=student,
+                error_message="Roll number is required.",
+            )
+
+        existing_student = Student.query.filter(
+            Student.roll_number == roll_number,
+            Student.id != student.id,
+        ).first()
+        if existing_student:
+            return render_template(
+                "student/update_roll_number.html",
+                student=student,
+                error_message="Roll number already exists.",
+            )
+
+        student.roll_number = roll_number
+        db.session.commit()
+        return redirect(url_for("student.dashboard"))
+
+    if student.roll_number and student.roll_number.strip():
+        return redirect(url_for("student.dashboard"))
+
+    return render_template("student/update_roll_number.html", student=student)
+
+
 @student_bp.route("/dashboard")
 @login_required
 def dashboard():
     if not student_required():
         return redirect(url_for("auth.login"))
 
+    student = get_current_student()
+    roll_number_redirect = require_roll_number(student)
+    if roll_number_redirect:
+        return roll_number_redirect
+
     reconcile_lecture_attendance()
-    student = Student.query.filter_by(user_id=current_user.id).first_or_404()
     subjects = (
         Subject.query.filter_by(semester=student.semester)
         .order_by(
@@ -88,8 +140,12 @@ def subject_attendance_history(subject_id):
     if not student_required():
         return redirect(url_for("auth.login"))
 
+    student = get_current_student()
+    roll_number_redirect = require_roll_number(student)
+    if roll_number_redirect:
+        return roll_number_redirect
+
     reconcile_lecture_attendance()
-    student = Student.query.filter_by(user_id=current_user.id).first_or_404()
     subject = Subject.query.filter_by(id=subject_id, semester=student.semester).first_or_404()
     records = (
         Attendance.query.filter_by(student_id=student.id, subject_id=subject.id)
@@ -111,7 +167,9 @@ def mark_attendance():
         return jsonify({"ok": False, "message": "Unauthorized"}), 403
 
     reconcile_lecture_attendance() # auto absent
-    student = Student.query.filter_by(user_id=current_user.id).first_or_404()
+    student = get_current_student()
+    if not student.roll_number or not student.roll_number.strip():
+        return jsonify({"ok": False, "message": "Please update your roll number first."}), 400
     subject_id = request.form.get("subject_id", type=int)
     latitude = request.form.get("latitude", type=float)
     longitude = request.form.get("longitude", type=float)

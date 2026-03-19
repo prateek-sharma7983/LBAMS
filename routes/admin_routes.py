@@ -1,9 +1,9 @@
 from datetime import datetime
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, logout_user
-from sqlalchemy import case
+from sqlalchemy import case, func
 from sqlalchemy.orm import joinedload
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from lecture_schedule import LECTURE_SLOTS
 from models import Attendance, Student, Subject, Teacher, User, db
@@ -42,11 +42,18 @@ def dashboard():
         "teachers": Teacher.query.count(),
         "subjects": Subject.query.count(),
     }
-    teachers = (
+    active_teachers = (
         Teacher.query.options(
             joinedload(Teacher.user),
             joinedload(Teacher.subject_assignments),
         )
+        .filter(Teacher.is_active.is_(True))
+        .order_by(Teacher.full_name)
+        .all()
+    )
+    removed_teachers = (
+        Teacher.query.options(joinedload(Teacher.user))
+        .filter(Teacher.is_active.is_(False))
         .order_by(Teacher.full_name)
         .all()
     )
@@ -72,13 +79,116 @@ def dashboard():
     return render_template(
         "admin/dashboard.html",
         stats=stats,
-        teachers=teachers,
+        teachers=active_teachers,
+        removed_teachers=removed_teachers,
         subjects=subjects,
         students=students,
         selected_semester=selected_semester,
         recent_reports=recent_reports,
         lecture_slots=LECTURE_SLOTS,
     )
+
+
+@admin_bp.route("/student-attendance")
+@login_required
+def student_attendance():
+    access_redirect = require_admin_login()
+    if access_redirect:
+        return access_redirect
+
+    roll_number = request.args.get("roll_number", "").strip().upper()
+    student = None
+    summary_rows = []
+    history_records = []
+
+    if roll_number:
+        student = Student.query.filter_by(roll_number=roll_number).first()
+        if student is None:
+            flash("Student not found for the entered roll number.", "danger")
+        else:
+            summary_rows = (
+                db.session.query(
+                    Subject.name.label("subject_name"),
+                    func.count(Attendance.id).label("total_classes"),
+                    func.sum(case((Attendance.status == "present", 1), else_=0)).label("present_count"),
+                )
+                .join(Attendance, Attendance.subject_id == Subject.id)
+                .filter(Attendance.student_id == student.id)
+                .group_by(Subject.id, Subject.name)
+                .order_by(Subject.name.asc())
+                .all()
+            )
+            history_records = (
+                Attendance.query.options(
+                    joinedload(Attendance.subject),
+                    joinedload(Attendance.lecture),
+                )
+                .filter(Attendance.student_id == student.id)
+                .order_by(Attendance.attendance_date.desc(), Attendance.created_at.desc())
+                .all()
+            )
+
+    return render_template(
+        "admin/student_attendance.html",
+        roll_number=roll_number,
+        student=student,
+        summary_rows=summary_rows,
+        history_records=history_records,
+    )
+
+
+@admin_bp.route("/pending-students")
+@login_required
+def pending_students():
+    access_redirect = require_admin_login()
+    if access_redirect:
+        return access_redirect
+
+    students = (
+        Student.query.filter_by(is_approved=False, is_rejected=False)
+        .order_by(Student.created_at.asc())
+        .all()
+    )
+    return render_template("admin/pending_students.html", students=students)
+
+
+@admin_bp.route("/approve-student/<int:student_id>", methods=["POST"])
+@login_required
+def approve_student(student_id):
+    access_redirect = require_admin_login()
+    if access_redirect:
+        return access_redirect
+
+    student = db.session.get(Student, student_id)
+    if not student or student.is_rejected:
+        flash("Student not found.", "danger")
+        return redirect(url_for("admin.pending_students"))
+
+    student.is_approved = True
+    student.is_rejected = False
+    db.session.commit()
+    flash(f"{student.full_name} has been approved.", "success")
+    return redirect(url_for("admin.pending_students"))
+
+
+@admin_bp.route("/reject-student/<int:student_id>", methods=["POST"])
+@login_required
+def reject_student(student_id):
+    access_redirect = require_admin_login()
+    if access_redirect:
+        return access_redirect
+
+    student = db.session.get(Student, student_id)
+    if not student or student.is_approved:
+        flash("Pending student not found.", "danger")
+        return redirect(url_for("admin.pending_students"))
+
+    student.is_rejected = True
+    student.is_approved = False
+    db.session.commit()
+
+    flash("Student registration rejected.", "danger")
+    return redirect(url_for("admin.pending_students"))
 
 
 @admin_bp.route("/manage-teacher-subjects")
@@ -88,7 +198,7 @@ def manage_teacher_subjects():
     if access_redirect:
         return access_redirect
 
-    teachers = Teacher.query.order_by(Teacher.full_name).all()
+    teachers = Teacher.query.filter_by(is_active=True).order_by(Teacher.full_name).all()
 
     return render_template(
         "admin/manage_teacher_subjects.html",
@@ -108,7 +218,7 @@ def teacher_subjects(teacher_id):
             joinedload(Teacher.subject_assignments),
             joinedload(Teacher.user),
         )
-        .filter(Teacher.id == teacher_id)
+        .filter(Teacher.id == teacher_id, Teacher.is_active.is_(True))
         .first_or_404()
     )
     assigned_subjects = sorted(
@@ -211,7 +321,7 @@ def assign_subject():
     teacher_id = request.form.get("teacher_id", type=int)
 
     subject = db.session.get(Subject, subject_id)
-    teacher = db.session.get(Teacher, teacher_id)
+    teacher = Teacher.query.filter_by(id=teacher_id, is_active=True).first()
     if not subject or not teacher:
         flash("Subject or teacher not found.", "danger")
         return redirect(url_for("admin.dashboard"))
@@ -220,6 +330,47 @@ def assign_subject():
         subject.teachers.append(teacher)
     db.session.commit()
     flash("Subject assigned to teacher.", "success")
+    return redirect(url_for("admin.dashboard"))
+
+
+@admin_bp.route("/remove_teacher/<int:teacher_id>", methods=["POST"])
+@login_required
+def remove_teacher(teacher_id):
+    access_redirect = require_admin_login()
+    if access_redirect:
+        return access_redirect
+
+    teacher = db.session.get(Teacher, teacher_id)
+    if not teacher or not teacher.is_active:
+        flash("Active teacher not found.", "danger")
+        return redirect(url_for("admin.dashboard"))
+
+    password = request.form.get("admin_password", "")
+    if not password or not check_password_hash(current_user.password_hash, password):
+        flash("Incorrect admin password.", "danger")
+        return redirect(url_for("admin.dashboard"))
+
+    teacher.is_active = False
+    db.session.commit()
+    flash(f"{teacher.full_name} has been removed.", "danger")
+    return redirect(url_for("admin.dashboard"))
+
+
+@admin_bp.route("/restore_teacher/<int:teacher_id>", methods=["POST"])
+@login_required
+def restore_teacher(teacher_id):
+    access_redirect = require_admin_login()
+    if access_redirect:
+        return access_redirect
+
+    teacher = db.session.get(Teacher, teacher_id)
+    if not teacher or teacher.is_active:
+        flash("Removed teacher not found.", "danger")
+        return redirect(url_for("admin.dashboard"))
+
+    teacher.is_active = True
+    db.session.commit()
+    flash(f"{teacher.full_name} has been restored.", "success")
     return redirect(url_for("admin.dashboard"))
 
 

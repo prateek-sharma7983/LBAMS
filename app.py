@@ -79,12 +79,31 @@ def ensure_default_admin():
 
 def ensure_schema_updates():
     inspector = inspect(db.engine)
+    student_columns = {column["name"] for column in inspector.get_columns("students")}
+    teacher_columns = {column["name"] for column in inspector.get_columns("teachers")}
     subject_columns = {column["name"] for column in inspector.get_columns("subjects")}
     lecture_columns = {column["name"] for column in inspector.get_columns("lectures")}
     association_table_exists = inspector.has_table("teacher_subjects")
     lecture_indexes = {index["name"] for index in inspector.get_indexes("lectures")}
+    student_indexes = {index["name"] for index in inspector.get_indexes("students")}
 
     with db.engine.begin() as connection:
+        if "is_approved" not in student_columns:
+            connection.execute(
+                text("ALTER TABLE students ADD COLUMN is_approved BOOLEAN NOT NULL DEFAULT 0")
+            )
+        if "roll_number" not in student_columns:
+            connection.execute(
+                text("ALTER TABLE students ADD COLUMN roll_number VARCHAR(30)")
+            )
+        if "is_rejected" not in student_columns:
+            connection.execute(
+                text("ALTER TABLE students ADD COLUMN is_rejected BOOLEAN NOT NULL DEFAULT 0")
+            )
+        if "is_active" not in teacher_columns:
+            connection.execute(
+                text("ALTER TABLE teachers ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1")
+            )
         if "start_time" not in subject_columns:
             connection.execute(text("ALTER TABLE subjects ADD COLUMN start_time TIME"))
         if "end_time" not in subject_columns:
@@ -101,6 +120,23 @@ def ensure_schema_updates():
                     "ON lectures(subject_id, lecture_date)"
                 )
             )
+        missing_roll_numbers = connection.execute(
+            text("SELECT id FROM students WHERE roll_number IS NULL OR TRIM(roll_number) = ''")
+        ).fetchall()
+        for student_id, in missing_roll_numbers:
+            connection.execute(
+                text("UPDATE students SET roll_number = :roll_number WHERE id = :student_id"),
+                {"roll_number": f"RN{student_id:04d}", "student_id": student_id},
+            )
+
+        if "uq_students_roll_number" not in student_indexes:
+            connection.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_students_roll_number "
+                    "ON students(roll_number)"
+                )
+            )
+
         if association_table_exists:
             legacy_assignments = connection.execute(
                 text("SELECT id, teacher_id FROM subjects WHERE teacher_id IS NOT NULL")

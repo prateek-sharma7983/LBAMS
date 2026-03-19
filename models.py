@@ -59,6 +59,7 @@ class Teacher(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
     full_name = db.Column(db.String(120), nullable=False)
     employee_code = db.Column(db.String(30), unique=True, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
 
     user = db.relationship("User", back_populates="teacher")
     subject_assignments = db.relationship(
@@ -74,14 +75,21 @@ class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True, nullable=False)
     student_code = db.Column(db.String(30), unique=True, nullable=False)
+    roll_number = db.Column(db.String(30), unique=True, nullable=False)
     full_name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     semester = db.Column(db.Integer, nullable=False)
+    is_approved = db.Column(db.Boolean, default=False, nullable=False)
+    is_rejected = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     user = db.relationship("User", back_populates="student")
-    attendances = db.relationship("Attendance", back_populates="student")
-    attendance_summaries = db.relationship("AttendanceSummary", back_populates="student")
+    attendances = db.relationship("Attendance", back_populates="student", passive_deletes=True)
+    attendance_summaries = db.relationship(
+        "AttendanceSummary",
+        back_populates="student",
+        passive_deletes=True,
+    )
 
 
 class Subject(db.Model):

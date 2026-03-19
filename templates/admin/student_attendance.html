@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Student Attendance{% endblock %}
+{% block content %}
+<section class="dashboard-grid">
+    <div class="card" style="grid-column: 1 / -1;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h2 class="mb-1">Search Student Attendance</h2>
+                <p class="muted mb-0">Find a student using roll number and view complete attendance details.</p>
+            </div>
+            <a class="btn btn-secondary" href="{{ url_for('admin.dashboard') }}">Back to Dashboard</a>
+        </div>
+        <form class="grid-form mt-3" method="GET" action="{{ url_for('admin.student_attendance') }}">
+            <input
+                type="text"
+                name="roll_number"
+                placeholder="Enter Roll Number"
+                value="{{ roll_number or '' }}"
+                required
+            >
+            <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+    </div>
+
+    {% if student %}
+    <div class="card" style="grid-column: 1 / -1;">
+        <h2 class="mb-1">{{ student.full_name }}</h2>
+        <p class="muted mb-0">{{ student.roll_number }} | {{ student.student_code }} | Semester {{ student.semester }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Attendance Summary</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Subject Name</th>
+                        <th>Total Classes</th>
+                        <th>Present Count</th>
+                        <th>Attendance %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in summary_rows %}
+                    {% set percentage = ((row.present_count or 0) / row.total_classes * 100) if row.total_classes else 0 %}
+                    <tr>
+                        <td>{{ row.subject_name }}</td>
+                        <td>{{ row.total_classes }}</td>
+                        <td>{{ row.present_count or 0 }}</td>
+                        <td>{{ "%.2f"|format(percentage) }}%</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">No summary available.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Detailed History</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Subject</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in history_records %}
+                    <tr>
+                        <td>{{ record.attendance_date|format_date }}</td>
+                        <td>{{ record.subject.display_label }}</td>
+                        <td>
+                            {% if record.lecture %}
+                            {{ record.lecture.start_time|format_time }} - {{ record.lecture.end_time|format_time }}
+                            {% else %}
+                            {{ record.subject.lecture_time_label }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.status == 'present' %}
+                            <span class="badge bg-success">Accepted</span>
+                            {% elif record.status == 'absent' %}
+                            <span class="badge bg-danger">Rejected</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">No attendance history found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
