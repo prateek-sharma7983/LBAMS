@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from flask import Flask
 from flask_login import LoginManager
 from sqlalchemy import inspect, text
@@ -21,16 +24,30 @@ login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 login_manager.login_message = "Admin email and password are required to open the dashboard."
 
-DEFAULT_ADMIN_EMAIL = "prateeksharma8958@gmail.com"
-DEFAULT_ADMIN_PASSWORD = "7983394909"
+DEFAULT_ADMIN_EMAIL = "admin@example.com"
+DEFAULT_ADMIN_PASSWORD = "change-me"
 DEFAULT_ADMIN_NAME = "System Admin"
+
+
+def get_database_uri(instance_path):
+    database_url = os.environ.get("DATABASE_URL", "").strip()
+    if database_url:
+        if database_url.startswith("postgres://"):
+            return database_url.replace("postgres://", "postgresql+pg8000://", 1)
+        if database_url.startswith("postgresql://"):
+            return database_url.replace("postgresql://", "postgresql+pg8000://", 1)
+        return database_url
+
+    sqlite_path = Path(instance_path) / "attendance_system.db"
+    return f"sqlite:///{sqlite_path.as_posix()}"
 
 
 def create_app():
     app = Flask(__name__)
-    app.config["SECRET_KEY"] = "change-this-secret-key"
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///attendance_system.db"
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    os.makedirs(app.instance_path, exist_ok=True)
+
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
+    app.config["SQLALCHEMY_DATABASE_URI"] = get_database_uri(app.instance_path)
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
@@ -60,19 +77,26 @@ def load_user(user_id):
 
 
 def ensure_default_admin():
-    user = User.query.filter_by(username=DEFAULT_ADMIN_EMAIL).first()
+    admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL", DEFAULT_ADMIN_EMAIL).strip().lower()
+    admin_password = os.environ.get("DEFAULT_ADMIN_PASSWORD", DEFAULT_ADMIN_PASSWORD)
+    admin_name = os.environ.get("DEFAULT_ADMIN_NAME", DEFAULT_ADMIN_NAME).strip() or DEFAULT_ADMIN_NAME
+
+    user = User.query.filter_by(username=admin_email).first()
     if user is None:
-        user = User(username=DEFAULT_ADMIN_EMAIL, role="admin")
-        user.set_password(DEFAULT_ADMIN_PASSWORD)
+        user = User(username=admin_email, role="admin")
+        user.set_password(admin_password)
         db.session.add(user)
         db.session.flush()
     else:
         user.role = "admin"
-        user.set_password(DEFAULT_ADMIN_PASSWORD)
+        user.username = admin_email
+        user.set_password(admin_password)
 
     admin = Admin.query.filter_by(user_id=user.id).first()
     if admin is None:
-        db.session.add(Admin(user_id=user.id, full_name=DEFAULT_ADMIN_NAME))
+        db.session.add(Admin(user_id=user.id, full_name=admin_name))
+    else:
+        admin.full_name = admin_name
 
     db.session.commit()
 

@@ -3,3 +3,5 @@ Flask-Login==0.6.3
 Flask-SQLAlchemy==3.1.1
 PyMySQL==1.1.1
 gunicorn==21.2.0
+pg8000==1.31.2
+pytz==2024.2
